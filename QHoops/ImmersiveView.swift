@@ -35,17 +35,37 @@ import RealityKit
 import RealityKitContent
 
 struct ImmersiveView: View {
-    var body: some View {
-        RealityView { content in
-            // Add the initial RealityKit content
-            if let scene = try? await Entity(named: "Immersive", in: realityKitContentBundle) {
-                content.add(scene)
-            }
-        }
-    }
+	var body: some View {
+		RealityView { content in
+			// Add the initial RealityKit content
+			if let scene = try? await Entity(named: "Immersive", in: realityKitContentBundle) {
+				content.add(scene)
+				
+				let floor = ModelEntity(mesh: .generatePlane(width: 100, depth: 100), materials: [OcclusionMaterial()])
+				floor.generateCollisionShapes(recursive: false)
+				floor.components[PhysicsBodyComponent.self] = .init(
+					massProperties: .default,
+					mode: .static
+				)
+				
+				content.add(floor)
+			}
+		}
+		.gesture(dragGeture)
+	}
+	
+	var dragGeture: some Gesture {
+		DragGesture()
+			.targetedToAnyEntity()
+			.onChanged { value in
+				value.entity.position = value.convert(value.location3D, from: .local, to: value.entity.parent!)
+				value.entity.components[PhysicsBodyComponent.self]?.mode = .kinematic
+			}
+	}
+	
 }
 
 #Preview {
-    ImmersiveView()
-        .previewLayout(.sizeThatFits)
+	ImmersiveView()
+		.previewLayout(.sizeThatFits)
 }
