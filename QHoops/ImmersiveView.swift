@@ -35,6 +35,15 @@ import RealityKit
 import RealityKitContent
 
 struct ImmersiveView: View {
+	
+	@State private var goalEntity: Entity?
+	@State private var goalScored: EventSubscription?
+	@State private var goalCelebration: Bool = false
+	@State private var confetti: Entity?
+	@State private var cheering: Entity?
+	@State private var audio: AudioFileResource?
+	
+	
 	var body: some View {
 		RealityView { content in
 			// Add the initial RealityKit content
@@ -49,9 +58,34 @@ struct ImmersiveView: View {
 				)
 				
 				content.add(floor)
+				
+				goalEntity = content.entities.first?.findEntity(named: "Goal")
+				goalScored = content.subscribe(to: CollisionEvents.Began.self, on: goalEntity) { collisionEvent in
+					print("Goal detected \(collisionEvent.entityA.name) and \(collisionEvent.entityB.name)")
+					goalCelebration = true
+				}
+				goalEntity?.components.set(OpacityComponent(opacity: 0.0))
+				
+				confetti = content.entities.first?.findEntity(named: "ConfettiEmitter")
+				confetti?.components.set(OpacityComponent(opacity: 0.0))
+				
+				cheering = content.entities.first?.findEntity(named: "ChannelAudio")
+				audio = try? await AudioFileResource(named: "/Root/cheering_m4a", from: "Immersive.usda", in: realityKitContentBundle)
+			}
+		} update: { content in
+			if let _ = content.entities.first {
+				if goalCelebration == true {
+					
+					confetti?.components.set(OpacityComponent(opacity: 1.0))
+					
+					if let audioPlaybackControl = cheering?.prepareAudio(audio!) {
+						audioPlaybackControl.play()
+					}
+				}
 			}
 		}
 		.gesture(dragGeture)
+		.gesture(tapGesture)
 	}
 	
 	var dragGeture: some Gesture {
@@ -60,6 +94,16 @@ struct ImmersiveView: View {
 			.onChanged { value in
 				value.entity.position = value.convert(value.location3D, from: .local, to: value.entity.parent!)
 				value.entity.components[PhysicsBodyComponent.self]?.mode = .kinematic
+			}
+	}
+	
+	var tapGesture: some Gesture {
+		TapGesture()
+			.targetedToAnyEntity()
+			.onEnded { value in
+				// do nothing
+				value.entity.components[PhysicsBodyComponent.self]?.mode = .dynamic
+				value.entity.components[PhysicsMotionComponent.self]?.linearVelocity = [0, 7, -5]
 			}
 	}
 	

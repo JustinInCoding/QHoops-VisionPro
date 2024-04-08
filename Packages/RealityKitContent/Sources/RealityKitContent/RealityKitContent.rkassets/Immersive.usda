@@ -9,7 +9,7 @@ reorder rootPrims = ["Root", "GridMaterial"]
 
 def Xform "Root"
 {
-    reorder nameChildren = ["Sphere", "Quiddich_hoop", "Cylinder"]
+    reorder nameChildren = ["Sphere", "Quiddich_hoop", "RedPULeather", "Goal", "ConfettiEmitter"]
     def Sphere "Sphere" (
         active = true
         prepend apiSchemas = ["MaterialBindingAPI"]
@@ -137,11 +137,20 @@ def Xform "Root"
                 }
             }
         }
+
+        over "Materials"
+        {
+            over "defaultMaterial"
+            {
+                token outputs:mtlx:surface
+                token outputs:realitykit:vertex
+            }
+        }
     }
 
     def "RedPULeather" (
         active = true
-        prepend references = @RedPULeather.usdz@
+        references = @RedPULeather.usdz@
     )
     {
         color3f inputs:Basecolor_Tint (
@@ -222,6 +231,110 @@ def Xform "Root"
         over "Normal"
         {
             float2 ui:nodegraph:node:size = (159, 235)
+        }
+    }
+
+    def Cylinder "Goal" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+        customData = {
+            float3 rotationEulerHint = (1.5707964, 0, 0)
+        }
+    )
+    {
+        uniform token axis = "Y"
+        double height = 0.2
+        rel material:binding = </Root/Goal/DefaultMaterial>
+        double radius = 0.1
+        quatf xformOp:orient = (0.70710677, 0.70710677, 0, 0)
+        float3 xformOp:scale = (4.462, 0.5, 4.462)
+        float3 xformOp:translate = (0, 2.455, -5.04)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Material "DefaultMaterial"
+        {
+            prepend token outputs:surface.connect = </Root/Goal/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+
+            def Shader "DefaultSurfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:roughness = 0.75
+                token outputs:surface
+            }
+        }
+
+        def RealityKitComponent "Collider"
+        {
+            uint group = 1
+            uniform token info:id = "RealityKit.Collider"
+            uint mask = 4294967295
+            token type = "Default"
+
+            def RealityKitStruct "Shape"
+            {
+                float3 extent = (0.2, 0.2, 0.2)
+                token shapeType = "Box"
+
+                def RealityKitStruct "pose"
+                {
+                }
+            }
+        }
+    }
+
+    def Xform "ConfettiEmitter"
+    {
+        float3 xformOp:scale = (9, 9, 9)
+        float3 xformOp:translate = (0, 2.7, -1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def RealityKitComponent "VFXEmitter"
+        {
+            token info:id = "RealityKit.VFXEmitter"
+
+            def RealityKitStruct "currentState"
+            {
+                token birthDirection = "Constant"
+                float3 emissionDirection = (0, -1, 0)
+                bool loops = 0
+                float particleSpeed = 0.08
+                float3 shapeSize = (0.1, 1, 0.1)
+                token spawnOccasion = "OnUpdate"
+
+                def RealityKitStruct "mainEmitter"
+                {
+                    float birthRate = 500
+                    float colorEvolutionPower = 0
+                    float4 endColorA = (0.0013006331, 0.032195132, 1, 1)
+                    float noiseStrength = 0.03
+                    token opacityOverLife = "Constant"
+                    asset particleImage = @@@grey-square-512@2x.png@@@
+                    double particleLifeSpan = 20
+                    float particleMass = 5
+                    float sizeMultiplierAtEndOfLifespan = 0.8
+                    float sizeMultiplierAtEndOfLifespanPower = 10
+                    bool useEndColor = 0
+                    bool useEndColorRange = 0
+                }
+
+                def RealityKitStruct "spawnedEmitter"
+                {
+                }
+            }
+        }
+    }
+
+    def RealityKitAudioFile "cheering_m4a"
+    {
+        uniform asset file = @cheering.m4a@
+    }
+
+    def Xform "ChannelAudio"
+    {
+        def RealityKitComponent "ChannelAudio"
+        {
+            uniform token info:id = "RealityKit.ChannelAudio"
         }
     }
 }
